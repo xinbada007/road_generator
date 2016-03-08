@@ -333,6 +333,7 @@ void camera::generateCurve()
 	const int dim = 3;
 	SISLCurve* sc = newCurve(numPoints, order, kts, pts, kind, dim, 1);
 	const int der = 0;
+	const double step = 0.005f;
 	double derive[(der + 1)*dim];
 	memset(derive, 0, sizeof(derive));
 	double curvature[dim];
@@ -342,31 +343,62 @@ void camera::generateCurve()
 	_path->clear();
 	_curvature->clear();
 	_originalRadius->clear();
-	for (int i = dim; i < _knot->size() - order; i++)
+	for (int i = 0; i < _knot->size() - 1; i++)
 	{
-		for (double j = kts[i]; j <= double(kts[i + 1]); j += 0.005)
+		int leftknot = i;
+		for (double k = kts[i]; k <= double(kts[i + 1]); k += step)
 		{
-			int leftknot = i;
-			s1225(sc, der, j, &leftknot, derive, curvature, &radius, &jstat);
+			s1225(sc, der, k, &leftknot, derive, curvature, &radius, &jstat);
 			if (jstat == 0)
 			{
-				_path->push_back(osg::Vec3d(derive[0], derive[1], derive[2]));
-				_originalRadius->push_back(radius);
-				if (radius != -1 && radius != 0)
+				if (_path->empty() || _path->back() != osg::Vec3d(derive[0], derive[1], derive[2]))
 				{
-					_curvature->push_back(radius);
-				}
-				else if (radius == 0)
-				{
-					printf("Wrong\n");
+					_path->push_back(osg::Vec3d(derive[0], derive[1], derive[2]));
+					_originalRadius->push_back(radius);
+					if (radius != -1 && radius != 0)
+					{
+						_curvature->push_back(radius);
+					}
+					else if (radius == 0)
+					{
+						printf("Wrong\n");
+					}
 				}
 			}
 			else
 			{
 				printf("Wrong\n");
+				getchar();
 			}
+			if (k == kts[i + 1]) break;
 		}
 	}
+
+// 	for (int i = dim; i < _knot->size() - order; i++)
+// 	{
+// 		for (double j = kts[i]; j <= double(kts[i + 1]); j += 0.005)
+// 		{
+// 			int leftknot = i;
+// 			s1225(sc, der, j, &leftknot, derive, curvature, &radius, &jstat);
+// 			if (jstat == 0)
+// 			{
+// 				_path->push_back(osg::Vec3d(derive[0], derive[1], derive[2]));
+// 				_originalRadius->push_back(radius);
+// 				if (radius != -1 && radius != 0)
+// 				{
+// 					_curvature->push_back(radius);
+// 				}
+// 				else if (radius == 0)
+// 				{
+// 					printf("Wrong\n");
+// 				}
+// 			}
+// 			else
+// 			{
+// 				printf("Wrong\n");
+// 			}
+// 		}
+// 	}
 
 	if (_curvature->size() > 10)
 	{
